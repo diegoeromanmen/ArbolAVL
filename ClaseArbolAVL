@@ -1,0 +1,282 @@
+import java.util.Queue;
+import java.util.LinkedList;
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class TareaAVL<T extends Comparable<T>> {
+	private NodoAVL raiz;
+
+	private class NodoAVL {
+		T dato;
+		int altura;
+		int fe;
+		NodoAVL izquierda;
+		NodoAVL derecha;
+		NodoAVL padre;
+
+		NodoAVL(T dato) {
+			this.dato = dato;
+			this.padre = padre;
+			this.altura = 1;
+			this.fe = 0;
+		}
+	}
+
+//Método para insertar un nodo en un árbol avl dado un dato
+	public void insertar(T dato) {
+		raiz = insertar(raiz, null, dato);
+	}
+
+	private NodoAVL insertar(NodoAVL nodo, NodoAVL padre, T dato) {
+		if (nodo == null) {
+			NodoAVL nuevoNodo = new NodoAVL(dato);
+			nuevoNodo.padre = padre;
+			return nuevoNodo;
+		}
+//Se recorre el árbol hasta encontrar la posición donde debe de estar
+		if (dato.compareTo(nodo.dato) < 0) {
+			nodo.izquierda = insertar(nodo.izquierda, nodo, dato);
+		} else if (dato.compareTo(nodo.dato) > 0) {
+			nodo.derecha = insertar(nodo.derecha, nodo, dato);
+		}
+//Se calcula el factor de equilibrio del nodo a insertar con la resta de alturas
+		nodo.altura = 1 + Math.max(obtenerAltura(nodo.izquierda), obtenerAltura(nodo.derecha));
+		nodo.fe = obtenerBalance(nodo);
+//Se verifica que los factores de equilibrio esten correctamente, es decir, que no sean mayor a 1 o menor a 1
+		if (nodo.fe < -1) {
+			if (dato.compareTo(nodo.izquierda.dato) < 0) {
+				return rotarDerecha(nodo);
+			} else {
+				nodo.izquierda = rotarIzquierda(nodo.izquierda);
+				return rotarDerecha(nodo);
+			}
+		}
+
+		if (nodo.fe > 1) {
+			if (dato.compareTo(nodo.derecha.dato) > 0) {
+				return rotarIzquierda(nodo);
+			} else {
+				nodo.derecha = rotarDerecha(nodo.derecha);
+				return rotarIzquierda(nodo);
+			}
+		}
+		return nodo;
+	}
+
+	private NodoAVL rotarDerecha(NodoAVL y) {
+		if (y == null || y.izquierda == null) {
+			return y;
+		}
+
+		NodoAVL x = y.izquierda;
+		NodoAVL T2 = x != null ? x.derecha : null;
+
+		x.derecha = y;
+		y.izquierda = T2;
+
+//Se calculan las alturas
+		y.altura = 1 + Math.max(obtenerAltura(y.izquierda), obtenerAltura(y.derecha));
+		x.altura = 1 + Math.max(obtenerAltura(x.izquierda), obtenerAltura(x.derecha));
+//Cuando el nodo que se elimina no es la raíz
+		if (y.padre != null) {
+			if (y.padre.izquierda == y) {
+				y.padre.izquierda = x;
+			} else {
+				y.padre.derecha = x;
+			}
+		}
+		// Se actualizan los datos de x y y
+		x.padre = y.padre;
+		y.padre = x;
+
+		x.fe = obtenerBalance(x);
+		y.fe = obtenerBalance(y);
+
+		return x;
+	}
+
+	private NodoAVL rotarIzquierda(NodoAVL x) {
+		if (x == null || x.derecha == null) {
+			return x;
+		}
+
+		NodoAVL y = x.derecha;
+		NodoAVL T2 = y != null ? y.izquierda : null;
+
+		y.izquierda = x;
+		x.derecha = T2;
+
+		// Se calculan las alturas
+		x.altura = 1 + Math.max(obtenerAltura(x.izquierda), obtenerAltura(x.derecha));
+		y.altura = 1 + Math.max(obtenerAltura(y.izquierda), obtenerAltura(y.derecha));
+
+		if (x.padre != null) {
+			if (x.padre.izquierda == x) {
+				x.padre.izquierda = y;
+			} else {
+				x.padre.derecha = y;
+			}
+		}
+		y.padre = x.padre;
+		x.padre = y;
+
+		x.fe = obtenerBalance(x);
+		y.fe = obtenerBalance(y);
+
+		return y;
+	}
+
+///////////////////////////////////////////
+	public void eliminar(T dato) {
+		raiz = eliminar(raiz, dato);
+	}
+
+	private NodoAVL eliminar(NodoAVL raiz, T dato) {
+		// Se verifica que la raíz sea diferente de null y parar cuando acabe
+		if (raiz == null)
+			return raiz;
+		// Se comprueba cual de los nodos es menor o mayor al que se está buscando
+		// eliminar (busqueda recursiva)
+		if (dato.compareTo(raiz.dato) < 0) {
+			raiz.izquierda = eliminar(raiz.izquierda, dato);
+		} else if (dato.compareTo(raiz.dato) > 0) {
+			raiz.derecha = eliminar(raiz.derecha, dato);
+		} else {
+			// Se verifica que se entre en el caso de 0 o 1 hijo.
+			if ((raiz.izquierda == null) || (raiz.derecha == null)) {
+				NodoAVL temp = null;
+				if (temp == raiz.izquierda) {
+					temp = raiz.derecha;
+				} else {
+					temp = raiz.izquierda;
+				}
+				// Caso 0 hijos:
+				if (temp == null) {// El nodo actual se convierte en el nodo temporal (caso de 0 hijos).
+					temp = raiz;
+					raiz = null;
+					// Caso 1 hijo:
+				} else {// El nodo actual se reemplaza por su hijo no nulo (caso de 1 hijo).
+					raiz = temp;
+				}
+			} else {
+				// Caso 3: Dos hijos
+				// Se elimina el sucesor inmediato del subárbol derecho y se transfieren los
+				// elementos
+				NodoAVL temp = encontrarNodoMenor(raiz.derecha);
+				raiz.dato = temp.dato;
+				raiz.derecha = eliminar(raiz.derecha, temp.dato);
+			}
+		}
+
+		if (raiz == null)
+			return raiz;
+
+		// Paso 4: Modificar la altura y el factor de equilibrio del nodo actual.
+		raiz.altura = 1 + Math.max(obtenerAltura(raiz.izquierda), obtenerAltura(raiz.derecha));
+		raiz.fe = obtenerBalance(raiz);
+
+		// Paso 5: Verificar el desequilibrio en la rama izquierda.
+		if (raiz.fe < -1) {
+			// Realizar una rotación a la derecha para restaurar el equilibrio.
+			if (dato.compareTo(raiz.izquierda.dato) < 0) {
+				return rotarDerecha(raiz);
+			} else {
+				// Realizar dos rotaciones (izquierda-derecha) para restaurar el equilibrio.
+				raiz.izquierda = rotarIzquierda(raiz.izquierda);
+				return rotarDerecha(raiz);
+			}
+		}
+		// Paso 6: Verificar el desequilibrio en la rama derecha.
+		if (raiz.fe > 1) {
+			// Realizar una rotación a la izquierda para restaurar el equilibrio.
+			if (dato.compareTo(raiz.derecha.dato) > 0) {
+				return rotarIzquierda(raiz);
+			} else {
+				// Realizar dos rotaciones (derecha-izquierda) para restaurar el equilibrio.
+				raiz.derecha = rotarDerecha(raiz.derecha);
+				return rotarIzquierda(raiz);
+			}
+		}
+		// Paso 7: Regresar el nodo actual (posiblemente modificado) después de la
+		// eliminación y las rotaciones.
+		return raiz;
+	}
+
+//Esta parte se utiliza al buscar el siguiente inorden en el arbol, para el caso de eliminar con 2 hijos.
+	private NodoAVL encontrarNodoMenor(NodoAVL nodo) {
+		NodoAVL actual = nodo;
+		while (actual.izquierda != null) {
+			actual = actual.izquierda;
+		}
+		return actual;
+	}
+
+	// Sirve como un get de las alturas, ya que los nodos guardan su altura
+	private int obtenerAltura(NodoAVL nodo) {
+		if (nodo == null)
+			return 0;
+		return nodo.altura;
+	}
+
+//Se calcula los fe d elos nodos
+	private int obtenerBalance(NodoAVL nodo) {
+		if (nodo == null)
+			return 0;
+		return obtenerAltura(nodo.derecha) - obtenerAltura(nodo.izquierda);
+	}
+//Método para imprimeir por niveles usando una cola.
+
+	public void imprimirPorNiveles() {
+		if (raiz == null) {
+			System.out.println("El árbol está vacío.");
+			return;
+		}
+
+		Queue<NodoAVL> cola = new LinkedList<>();
+		cola.add(raiz);
+		// Se verifica que cuando la cola ya no tenga elementos se acabe el método
+
+		while (!cola.isEmpty()) {
+			NodoAVL nodo = cola.poll();
+			// Los elementos se van imprimendo según aparecen en la cola y se introducen a
+			// sus hijos
+			System.out.print(nodo.dato + " (" + (nodo.fe) + ") ");
+
+			if (nodo.izquierda != null) {
+				cola.add(nodo.izquierda);
+			}
+
+			if (nodo.derecha != null) {
+				cola.add(nodo.derecha);
+			}
+		}
+
+		System.out.println();
+	}
+
+	public static void main(String[] args) {
+		TareaAVL<Integer> arbol = new TareaAVL<>();
+		arbol.insertar(15);
+		arbol.insertar(30);
+		arbol.insertar(31);
+		arbol.insertar(40);
+		arbol.insertar(45);
+		arbol.insertar(10);
+		arbol.insertar(35);
+		arbol.insertar(37);
+		arbol.insertar(50);
+		arbol.insertar(55);
+		arbol.insertar(60);
+		arbol.insertar(53);
+		arbol.insertar(43);
+
+		arbol.eliminar(40);
+		arbol.eliminar(43);
+		arbol.eliminar(45);
+
+		System.out.println("\nRecorrido por nivel:");
+		arbol.imprimirPorNiveles();
+	}
+}
+
